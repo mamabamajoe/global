@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Information Finder</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #4caf50;
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        #search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            width: 80%;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #info-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        #info-text {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+        }
+
+        #place-image {
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        #chatbox {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    Place Information Finder
+</header>
+
+<div class="container">
+    <div id="search-container">
+        <input type="text" id="place-search" placeholder="Enter a place (e.g., Paris)">
+        <button onclick="getPlaceInfo()">Search</button>
+    </div>
+
+    <div id="info-container">
+        <div id="info-text">Type a place above and click 'Search' to get detailed information.</div>
+        <img id="place-image" src="" alt="Place Image">
+    </div>
+
+    <!-- Hidden chatbox -->
+    <div id="chatbox">
+        <script src="https://widget.cxgenie.ai/widget.js" data-aid="fe81a433-825b-4ca5-9f34-98b37b1390a6" data-lang="en"></script>
+    </div>
+</div>
+
+<script>
+    function getPlaceInfo() {
+        const place = document.getElementById("place-search").value.trim();
+        if (place === "") {
+            alert("Please enter a place name.");
+            return;
+        }
+
+        // Show the CX Genie widget
+        document.getElementById("chatbox").style.display = "block";
+
+        // Mock API response (Replace this with actual API call to CX Genie)
+        let infoText = '';
+        let imageUrl = '';
+
+        // Placeholder for possible places, you can replace this with dynamic API fetching
+        switch (place.toLowerCase()) {
+            case 'paris':
+                infoText = "Paris is the capital city of France, known for its iconic landmarks such as the Eiffel Tower, the Louvre Museum, and the Notre-Dame Cathedral. It is also famous for its rich culture, art, fashion, and cuisine.";
+                imageUrl = "https://example.com/paris-image.jpg"; // Replace with an actual image URL from an API
+                break;
+            case 'india':
+                infoText = "India is a diverse country known for its rich history, culture, and traditions. Popular landmarks include the Taj Mahal, the Red Fort, and the Himalayas.";
+                imageUrl = "https://example.com/india-image.jpg"; // Replace with an actual image URL from an API
+                break;
+            default:
+                infoText = "Information not available for this place. Try another location!";
+                imageUrl = "";
+        }
+
+        // Display information and image
+        document.getElementById("info-text").innerText = infoText;
+        document.getElementById("place-image").src = imageUrl;
+    }
+</script>
+
+</body>
+</html>
