@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map with Culture Details</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100vh;
+        }
+        #searchBar {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            background-color: white;
+            z-index: 1000;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <input id="searchBar" type="text" placeholder="Search for a location..." />
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const culturalData = {
+            "paris": {
+                images: [
+                    "https://upload.wikimedia.org/wikipedia/commons/6/62/Eiffel_Tower%2C_Paris.jpg"
+                ],
+                culture: "Paris is known for its rich art, fashion, and culinary heritage.",
+                traditionalClothes: "Modern chic and haute couture.",
+                traditionalFood: "Baguettes, croissants, escargots, and ratatouille."
+            },
+            "tokyo": {
+                images: [
+                    "https://upload.wikimedia.org/wikipedia/commons/e/e7/Tokyo_Tower_and_Skyscrapers_at_Night.jpg"
+                ],
+                culture: "Tokyo blends traditional Japanese culture with modern innovations.",
+                traditionalClothes: "Kimono and yukata.",
+                traditionalFood: "Sushi, ramen, and tempura."
+            },
+            "new york": {
+                images: [
+                    "https://upload.wikimedia.org/wikipedia/commons/a/a1/Statue_of_Liberty_7.jpg"
+                ],
+                culture: "Known as a melting pot of cultures, New York is diverse and vibrant.",
+                traditionalClothes: "Modern urban styles.",
+                traditionalFood: "Bagels, pizza, and hot dogs."
+            }
+        };
+
+        async function searchLocation(query) {
+            try {
+                const normalizedQuery = query.toLowerCase().trim();
+                let response = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&addressdetails=1`);
+                let data = await response.json();
+
+                if (data.length > 0) {
+                    let place = data[0];
+                    let lat = parseFloat(place.lat);
+                    let lon = parseFloat(place.lon);
+                    map.setView([lat, lon], 10);
+
+                    let popupContent = `<b>${place.display_name}</b>`;
+                    if (culturalData[normalizedQuery]) {
+                        let locationData = culturalData[normalizedQuery];
+                        popupContent += `<p>${locationData.culture}</p>`;
+                        popupContent += `<p><b>Traditional Clothes:</b> ${locationData.traditionalClothes}</p>`;
+                        popupContent += `<p><b>Traditional Food:</b> ${locationData.traditionalFood}</p>`;
+                        locationData.images.forEach(img => {
+                            popupContent += `<img src="${img}" alt="Image" style="width: 200px; height: auto; margin-top: 10px;">`;
+                        });
+                    } else {
+                        popupContent += "<p>No specific cultural data available for this location.</p>";
+                        popupContent += `<p><b>General Tip:</b> Visit historical landmarks and try local cuisine for a great experience!</p>`;
+                    }
+
+                    L.marker([lat, lon]).addTo(map)
+                        .bindPopup(popupContent)
+                        .openPopup();
+                } else {
+                    alert("Location not found. Please try another search.");
+                }
+            } catch (error) {
+                console.error("Error with search:", error);
+            }
+        }
+
+        document.getElementById("searchBar").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                let query = e.target.value;
+                if (query) {
+                    searchLocation(query);
+                } else {
+                    alert("Please enter a location to search.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>
