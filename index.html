@@ -3,148 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Globe with Information</title>
+    <title>Interactive Map with Search</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
+        #map {
+            height: 100vh;
         }
-        canvas {
-            display: block;
-        }
-        #info-box {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            max-height: 40%;
-            overflow-y: auto;
-            background: #f4f4f4;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            font-size: 14px;
-        }
-        .loading {
-            color: blue;
-        }
-        .error {
-            color: red;
-        }
-        .place-title {
-            font-size: 18px;
-            font-weight: bold;
+        #searchBar {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            background-color: white;
+            z-index: 1000;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <div id="container"></div>
-    <div id="info-box">
-        <p>Click on a location on the globe to get information.</p>
-    </div>
-
-    <!-- Include Three.js for the 3D Globe -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/OrbitControls.js"></script>
-
+    <input id="searchBar" type="text" placeholder="Search for a location..." />
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Your API Key
-        const API_KEY = "AIzaSyBvauUbsmpMrNLkzPkmbUBit7BojlV0pEQ";
+        // Initialize the map
+        var map = L.map('map').setView([20, 0], 2); // Default to a global view
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-        // Create the 3D Scene
-        const container = document.getElementById('container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
-
-        // Add lighting
-        const light = new THREE.PointLight(0xffffff, 1, 1000);
-        light.position.set(10, 10, 10);
-        scene.add(light);
-
-        // Create the Globe
-        const globeGeometry = new THREE.SphereGeometry(5, 50, 50);
-        const globeMaterial = new THREE.MeshPhongMaterial({
-            map: new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/e/ed/Earthmap1000x500compac.jpg'),
-            bumpMap: new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/5/5a/EarthBump.png'),
-            bumpScale: 0.05,
-        });
-        const globe = new THREE.Mesh(globeGeometry, globeMaterial);
-        scene.add(globe);
-
-        // Add controls for rotating the globe
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableZoom = true;
-
-        camera.position.z = 10;
-
-        // Animation Loop
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Handle Clicks on the Globe
-        function getCoordinates(intersect) {
-            const point = intersect.point.normalize();
-            const latitude = Math.asin(point.y) * (180 / Math.PI);
-            const longitude = Math.atan2(point.z, point.x) * (180 / Math.PI);
-            return { latitude, longitude };
-        }
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(globe);
-
-            if (intersects.length > 0) {
-                const { latitude, longitude } = getCoordinates(intersects[0]);
-                fetchPlaceData(latitude, longitude);
-            }
-        });
-
-        // Display Information Below the Globe
-        async function fetchPlaceData(lat, lng) {
-            const infoBox = document.getElementById('info-box');
-            infoBox.innerHTML = `<p class='loading'>Loading information for coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}...</p>`;
-
+        // Search functionality using OpenStreetMap's Nominatim service
+        async function searchLocation(query) {
             try {
-                // Google Maps Reverse Geocoding API to get place name
-                const locationEndpoint = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`;
-                const locationResponse = await fetch(locationEndpoint);
-                const locationData = await locationResponse.json();
+                let response = await fetch(https://nominatim.openstreetmap.org/search?q=${query}&format=json&addressdetails=1);
+                let data = await response.json();
 
-                if (locationData.status !== "OK") {
-                    throw new Error("Failed to fetch location details.");
+                if (data.length > 0) {
+                    let place = data[0];
+                    let lat = parseFloat(place.lat);
+                    let lon = parseFloat(place.lon);
+                    map.setView([lat, lon], 10);
+
+                    L.marker([lat, lon]).addTo(map)
+                        .bindPopup(<b>${place.display_name}</b>)
+                        .openPopup();
+                } else {
+                    alert("Location not found. Please try another search.");
                 }
-
-                const place = locationData.results[0]?.formatted_address || "Unknown Location";
-
-                // Use Gemini or other API for detailed place information
-                const geminiEndpoint = `https://example-api.com/location-info?place=${encodeURIComponent(place)}`;
-                const geminiResponse = await fetch(geminiEndpoint);
-                const geminiData = await geminiResponse.json();
-
-                // Show fetched data
-                infoBox.innerHTML = `
-                    <p class="place-title">${place}</p>
-                    <p class="place-description">${geminiData.description}</p>
-                    <img src="${geminiData.image}" alt="Place Image" style="max-width: 100%; height: auto;" />
-                    <p><strong>Culture:</strong> ${geminiData.culture}</p>
-                    <p><strong>Tourist Attractions:</strong> ${geminiData.attractions}</p>
-                `;
             } catch (error) {
-                console.error('Error fetching data:', error);
-                infoBox.innerHTML = `<p class='error'>Unable to fetch data for this location. Please try again later.</p>`;
-            }
+                console.error("Error with search:", error);
+     }
         }
+
+        // Event listener for the search bar
+        document.getElementById("searchBar").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                let query = e.target.value;
+                if (query) {
+                    searchLocation(query);
+                } else {
+                    alert("Please enter a location to search.");
+                }
+            }
+        });
     </script>
 </body>
 </html>
-
