@@ -3,147 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Place Information Finder</title>
+    <title>Interactive Globe with Information</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7fc;
             margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
         }
-
-        header {
-            background-color: #4caf50;
-            color: white;
-            padding: 15px 0;
-            text-align: center;
-            font-size: 24px;
+        canvas {
+            display: block;
         }
-
-        .container {
-            width: 80%;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: white;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+        #info-box {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-height: 40%;
+            overflow-y: auto;
+            background: #f4f4f4;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            font-size: 14px;
         }
-
-        #search-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
+        .loading {
+            color: blue;
         }
-
-        input[type="text"] {
-            padding: 12px;
-            width: 80%;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-            margin-right: 10px;
+        .error {
+            color: red;
         }
-
-        button {
-            padding: 12px 20px;
-            font-size: 16px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        #info-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
-        #info-text {
-            margin-bottom: 20px;
+        .place-title {
             font-size: 18px;
-            color: #333;
-            text-align: center;
-        }
-
-        #place-image {
-            width: 80%;
-            max-width: 400px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
-        }
-
-        #chatbox {
-            display: none;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-
-<header>
-    Place Information Finder
-</header>
-
-<div class="container">
-    <div id="search-container">
-        <input type="text" id="place-search" placeholder="Enter a place (e.g., Paris)">
-        <button onclick="getPlaceInfo()">Search</button>
+    <div id="container"></div>
+    <div id="info-box">
+        <p>Click on a location on the globe to get information.</p>
     </div>
 
-    <div id="info-container">
-        <div id="info-text">Type a place above and click 'Search' to get detailed information.</div>
-        <img id="place-image" src="" alt="Place Image">
-    </div>
+    <!-- Include Three.js for the 3D Globe -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/OrbitControls.js"></script>
 
-    <!-- Hidden chatbox -->
-    <div id="chatbox">
-        <script src="https://widget.cxgenie.ai/widget.js" data-aid="fe81a433-825b-4ca5-9f34-98b37b1390a6" data-lang="en"></script>
-    </div>
-</div>
+    <script>
+        // Your API Key
+        const API_KEY = "AIzaSyBvauUbsmpMrNLkzPkmbUBit7BojlV0pEQ";
 
-<script>
-    function getPlaceInfo() {
-        const place = document.getElementById("place-search").value.trim();
-        if (place === "") {
-            alert("Please enter a place name.");
-            return;
+        // Create the 3D Scene
+        const container = document.getElementById('container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Add lighting
+        const light = new THREE.PointLight(0xffffff, 1, 1000);
+        light.position.set(10, 10, 10);
+        scene.add(light);
+
+        // Create the Globe
+        const globeGeometry = new THREE.SphereGeometry(5, 50, 50);
+        const globeMaterial = new THREE.MeshPhongMaterial({
+            map: new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/e/ed/Earthmap1000x500compac.jpg'),
+            bumpMap: new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/5/5a/EarthBump.png'),
+            bumpScale: 0.05,
+        });
+        const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+        scene.add(globe);
+
+        // Add controls for rotating the globe
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableZoom = true;
+
+        camera.position.z = 10;
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle Clicks on the Globe
+        function getCoordinates(intersect) {
+            const point = intersect.point.normalize();
+            const latitude = Math.asin(point.y) * (180 / Math.PI);
+            const longitude = Math.atan2(point.z, point.x) * (180 / Math.PI);
+            return { latitude, longitude };
         }
 
-        // Show the CX Genie widget
-        document.getElementById("chatbox").style.display = "block";
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
 
-        // Mock API response (Replace this with actual API call to CX Genie)
-        let infoText = '';
-        let imageUrl = '';
+        window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-        // Placeholder for possible places, you can replace this with dynamic API fetching
-        switch (place.toLowerCase()) {
-            case 'paris':
-                infoText = "Paris is the capital city of France, known for its iconic landmarks such as the Eiffel Tower, the Louvre Museum, and the Notre-Dame Cathedral. It is also famous for its rich culture, art, fashion, and cuisine.";
-                imageUrl = "https://example.com/paris-image.jpg"; // Replace with an actual image URL from an API
-                break;
-            case 'india':
-                infoText = "India is a diverse country known for its rich history, culture, and traditions. Popular landmarks include the Taj Mahal, the Red Fort, and the Himalayas.";
-                imageUrl = "https://example.com/india-image.jpg"; // Replace with an actual image URL from an API
-                break;
-            default:
-                infoText = "Information not available for this place. Try another location!";
-                imageUrl = "";
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(globe);
+
+            if (intersects.length > 0) {
+                const { latitude, longitude } = getCoordinates(intersects[0]);
+                fetchPlaceData(latitude, longitude);
+            }
+        });
+
+        // Display Information Below the Globe
+        async function fetchPlaceData(lat, lng) {
+            const infoBox = document.getElementById('info-box');
+            infoBox.innerHTML = `<p class='loading'>Loading information for coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}...</p>`;
+
+            try {
+                // Google Maps Reverse Geocoding API to get place name
+                const locationEndpoint = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`;
+                const locationResponse = await fetch(locationEndpoint);
+                const locationData = await locationResponse.json();
+
+                if (locationData.status !== "OK") {
+                    throw new Error("Failed to fetch location details.");
+                }
+
+                const place = locationData.results[0]?.formatted_address || "Unknown Location";
+
+                // Use Gemini or other API for detailed place information
+                const geminiEndpoint = `https://example-api.com/location-info?place=${encodeURIComponent(place)}`;
+                const geminiResponse = await fetch(geminiEndpoint);
+                const geminiData = await geminiResponse.json();
+
+                // Show fetched data
+                infoBox.innerHTML = `
+                    <p class="place-title">${place}</p>
+                    <p class="place-description">${geminiData.description}</p>
+                    <img src="${geminiData.image}" alt="Place Image" style="max-width: 100%; height: auto;" />
+                    <p><strong>Culture:</strong> ${geminiData.culture}</p>
+                    <p><strong>Tourist Attractions:</strong> ${geminiData.attractions}</p>
+                `;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                infoBox.innerHTML = `<p class='error'>Unable to fetch data for this location. Please try again later.</p>`;
+            }
         }
-
-        // Display information and image
-        document.getElementById("info-text").innerText = infoText;
-        document.getElementById("place-image").src = imageUrl;
-    }
-</script>
-
+    </script>
 </body>
 </html>
+
